@@ -1,0 +1,56 @@
+class TestUtilsMixin():
+
+    def _convert_unicode_to_string(self, value):
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
+        return value
+
+    def assertDictStructure(self, d1, d2, check_lists=True):
+        """
+        :param d1: dict first dict to compare
+        :param d2: dict second dict to compare
+        :param check_lists: bool should check for list structure be done
+        :return: None
+        Checks if structure of 2 dicts is the same ignoring the values
+        """
+        # check if we have all and the same keys
+        diff = set(d1.keys()) - set(d2.keys())
+        self.assertEquals(diff, set([]))
+        diff = set(d2.keys()) - set(d1.keys())
+        self.assertEquals(diff, set([]))
+
+        for key, val in d1.iteritems():
+            # check if types of value are the same
+            val = self._convert_unicode_to_string(val)
+            d2[key] = self._convert_unicode_to_string(d2[key])
+            self.assertTrue(type(val)==type(d2[key]),
+                            'Values of key "{}" are different types ({} vs {})'.format(key, type(val), type(d2[key])))
+
+            if isinstance(val, dict):
+                self.assertDictStructure(val, d2[key])
+
+            if not check_lists:
+                continue
+
+            if isinstance(val, list):
+                self.assertListStructure(val, d2[key], key=key)
+
+    def assertListStructure(self, list1, list2, check_dicts=True, key=None):
+        """
+        :param list1: list first
+        :param list2: list second
+        :return: None
+        Checks if a structire of 2 lists is the same ignoring the values
+        """
+        self.assertEquals(len(list1), len(list2), 'Number of elements in a list under "{}" doesn\'t match'.format(key))
+        for idx, elem in enumerate(list1):
+            self.assertTrue(type(elem) == type(list2[idx]), 'List elements for index {} are different types'.format(idx))
+
+            if isinstance(elem, list):
+                self.assertListStructure(elem, list2[idx])
+
+            if not check_dicts:
+                continue
+
+            if isinstance(elem, dict):
+                self.assertDictStructure(elem, list2[idx])
